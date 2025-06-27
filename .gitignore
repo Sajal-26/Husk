@@ -1,0 +1,7 @@
+# Ignore virtual env and environment file
+.env
+.venv/
+
+# Ignore folders
+Codes/
+Updates/

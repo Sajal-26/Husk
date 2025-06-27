@@ -1,0 +1,1 @@
+from .speak import speak, set_voice
