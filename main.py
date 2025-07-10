@@ -1,11 +1,14 @@
 from dotenv import load_dotenv
+import time
 import os
 
 from google.genai import types
 from google import genai
 
-from Senses import speak, set_voice
-from pydub.playback import play
+from Senses import speak, set_voice, listen
+from pydub.playback import _play_with_simpleaudio
+import sounddevice as sd
+import numpy as np
 
 load_dotenv()
 
@@ -42,10 +45,11 @@ class Husk:
         '''
 
         prompt = "Greetings"
+        set_voice("en-GB-RyanNeural")
+        
         while True:
             response = self.model.send_message_stream(message = [prompt])
-            set_voice("en-GB-RyanNeural")
-            if prompt == 'q':
+            if prompt.lower() == 'exit.':
                 print("Goodbye!")
                 break
 
@@ -60,13 +64,27 @@ class Husk:
             elif self.OUTPUT_MODE == 'AUDIO':
                 r = ''
                 for chunk in response:
-                    if chunk == None:
-                        continue
-                    r += chunk.text
+                    try:
+                        r += chunk.text
+                        print(chunk.text, end="")
+                    except:
+                        pass
+                print()
                 audio = speak(r)
-                play(audio)
+                playback = _play_with_simpleaudio(audio)
 
-            prompt = input("> ")
+                with sd.InputStream(samplerate=16000, channels=1, dtype=np.float32) as stream:
+                    while playback.is_playing():
+                        indata, _ = stream.read(1024)
+                        volume = np.max(np.abs(indata))
+
+                        if volume > 0.2:
+                            playback.stop()
+                            break
+                        time.sleep(0.1)
+
+            prompt = listen()
+            print("> ", prompt)
 
 
 if __name__ == '__main__':
